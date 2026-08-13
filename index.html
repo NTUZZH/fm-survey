@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Work-order priorities</title>
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; padding: 0; background: #ffffff; color: #111111;
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                      "Helvetica Neue", Arial, sans-serif;
+         font-size: 19px; line-height: 1.5; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 40px 16px; }
+  p { margin: 0 0 16px; }
+  a.btn { display: block; width: 100%; box-sizing: border-box; min-height: 56px;
+          padding: 14px; margin: 24px 0 0; text-align: center; font-weight: bold;
+          font-size: 20px; color: #ffffff; background: #111111; border: 2px solid #111111;
+          border-radius: 10px; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p id="msg">Opening the questions...</p>
+  <p id="fallback" style="display:none">
+    If nothing happens, tap the button below.
+  </p>
+  <a class="btn" id="go" href="y3_w8_block1.html" style="display:none">Open the questions</a>
+  <noscript>
+    <p>This page needs JavaScript. Please open the link in Chrome, Safari or Edge.</p>
+  </noscript>
+</div>
+<script>
+/* One link for everybody.
+
+   The three question sets hold different work orders, and a participant answers
+   one of them. This page picks which one and issues the participant code, so the
+   same link can be sent to every participant and nobody has to be told which set
+   to open.
+
+   The choice is made once per device and kept in localStorage, so a participant
+   who closes the page and taps the same link again returns to the set they
+   started, and the question page then restores their answers.
+
+   The sender may override both: "?b=2" forces a set, "?r=R07" forces a code.
+   That is how a set that has attracted fewer answers than the others is topped
+   up later. */
+(function () {
+  "use strict";
+  var KEY = "y3w8.entry.v1";
+  var NSETS = 3;
+  var ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  function param(name) {
+    var m = String(window.location.search || "").match(
+      new RegExp("[?&]" + name + "=([^&#]*)"));
+    if (!m) { return ""; }
+    try { return decodeURIComponent(m[1].replace(/\+/g, " ")); } catch (e) { return m[1]; }
+  }
+
+  function randomInts(n) {
+    var out = [], i;
+    if (window.crypto && window.crypto.getRandomValues) {
+      var buf = new Uint32Array(n);
+      window.crypto.getRandomValues(buf);
+      for (i = 0; i < n; i++) { out.push(buf[i]); }
+      return out;
+    }
+    for (i = 0; i < n; i++) { out.push(Math.floor(Math.random() * 4294967296)); }
+    return out;
+  }
+
+  function newCode() {
+    var r = randomInts(5), s = "P", i;
+    for (i = 0; i < 5; i++) { s += ALPHABET.charAt(r[i] % ALPHABET.length); }
+    return s;
+  }
+
+  function cleanCode(v) {
+    return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+  }
+
+  function load() {
+    try {
+      var raw = window.localStorage.getItem(KEY);
+      if (!raw) { return null; }
+      var o = JSON.parse(raw);
+      if (!o || !o.code) { return null; }
+      if (!(o.set >= 1 && o.set <= NSETS)) { return null; }
+      return o;
+    } catch (e) { return null; }
+  }
+
+  function save(o) {
+    try { window.localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {}
+  }
+
+  var forcedSet = parseInt(param("b"), 10);
+  var forcedCode = cleanCode(param("r"));
+  var state = load();
+
+  if (forcedSet >= 1 && forcedSet <= NSETS) {
+    state = { set: forcedSet, code: forcedCode || (state && state.code) || newCode() };
+    save(state);
+  } else if (forcedCode) {
+    state = { set: (state && state.set) || (randomInts(1)[0] % NSETS) + 1,
+              code: forcedCode };
+    save(state);
+  } else if (!state) {
+    state = { set: (randomInts(1)[0] % NSETS) + 1, code: newCode() };
+    save(state);
+  }
+
+  var url = "y3_w8_block" + state.set + ".html?r=" + encodeURIComponent(state.code);
+  var go = document.getElementById("go");
+  go.href = url;
+  window.setTimeout(function () {
+    document.getElementById("msg").textContent = "Work-order priorities";
+    document.getElementById("fallback").style.display = "";
+    go.style.display = "";
+  }, 1200);
+  window.location.replace(url);
+})();
+</script>
+</body>
+</html>
