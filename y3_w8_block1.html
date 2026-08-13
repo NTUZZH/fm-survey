@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>Which job goes first? B1</title>
+<style>
+:root { color-scheme: only light; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+html, body {
+  margin: 0; padding: 0;
+  background: #ffffff; color: #111111;
+  overflow-x: hidden;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 19px; line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 560px; margin: 0 auto; padding: 0 14px 40px; }
+p, li, label, div, span, h1, h2 { color: #111111; }
+h1 { font-size: 27px; line-height: 1.3; margin: 22px 0 12px; }
+h2 { font-size: 20px; line-height: 1.4; margin: 26px 0 10px; }
+p { margin: 0 0 14px; }
+.hint { font-size: 17px; }
+
+/* ---- big controls ---------------------------------------------------- */
+.btn {
+  display: block; width: 100%; min-height: 56px;
+  margin: 0 0 12px; padding: 12px 14px;
+  font-family: inherit; font-size: 19px; line-height: 1.5; text-align: left;
+  color: #111111; background: #ffffff;
+  border: 2px solid #111111; border-radius: 14px;
+  cursor: pointer; -webkit-appearance: none; appearance: none;
+}
+.btn:active { background: #e4e4e4; }
+.btn.on {
+  background: #111111; color: #ffffff; border-color: #111111;
+  border-width: 3px; font-weight: bold;
+}
+.btn.go {
+  text-align: center; font-weight: bold; font-size: 20px; min-height: 60px;
+  background: #111111; color: #ffffff;
+}
+.btn.go:active { background: #444444; }
+.btn.go[disabled] {
+  background: #ffffff; color: #8a8a8a; border-color: #c4c4c4;
+  font-weight: normal; cursor: default;
+}
+.btn.plain { text-align: center; font-weight: bold; }
+input[type=text] {
+  display: block; width: 100%; min-height: 56px;
+  margin: 0 0 12px; padding: 12px 14px;
+  font-family: inherit; font-size: 19px; line-height: 1.5;
+  color: #111111; background: #f2f2f2;
+  border: 2px solid #b9b9b9; border-radius: 14px;
+  -webkit-appearance: none; appearance: none;
+}
+input[type=text]:focus { background: #ffffff; border-color: #111111; outline: none; }
+
+/* ---- item screen ----------------------------------------------------- */
+.top {
+  position: -webkit-sticky; position: sticky; top: 0; z-index: 5;
+  background: #ffffff; padding: 8px 0 6px;
+  border-bottom: 1px solid #dddddd;
+}
+.toprow { display: block; overflow: hidden; }
+.count { float: left; font-size: 17px; font-weight: bold; line-height: 44px; }
+.nav { float: right; }
+.nav a {
+  display: inline-block; min-height: 44px; line-height: 40px;
+  padding: 0 14px; margin-left: 8px;
+  font-size: 17px; color: #111111; text-decoration: none; cursor: pointer;
+  border: 2px solid #111111; border-radius: 12px; background: #ffffff;
+}
+.nav a:active { background: #e4e4e4; }
+.bar { height: 8px; background: #e2e2e2; border-radius: 4px; margin-top: 8px; }
+.fill { height: 8px; background: #111111; border-radius: 4px; width: 0; }
+.frame { font-size: 17px; line-height: 1.5; margin: 8px 0 0; }
+.ask { font-size: 20px; font-weight: bold; margin: 8px 0 8px; }
+.card {
+  border: 2px solid #cccccc; border-radius: 14px;
+  padding: 8px 12px 10px; margin: 0 0 10px;
+}
+.who { font-size: 17px; font-weight: bold; margin: 0 0 2px; }
+.desc {
+  font-size: 22px; font-weight: bold; line-height: 1.5; margin: 0 0 6px;
+  overflow-wrap: break-word; word-wrap: break-word;
+}
+.f { font-size: 19px; line-height: 1.5; overflow-wrap: break-word; }
+.lab { font-weight: bold; }
+.ans { text-align: center; font-weight: bold; }
+
+/* ---- framing screen -------------------------------------------------- */
+ol.steps { font-size: 19px; line-height: 1.5; margin: 0 0 8px; padding-left: 26px; }
+ol.steps li { margin-bottom: 12px; }
+table.legend {
+  border-collapse: collapse; width: 100%; margin: 0 0 16px;
+  font-size: 19px; line-height: 1.5;
+}
+table.legend th, table.legend td {
+  border: 1px solid #bbbbbb; padding: 8px 8px; text-align: left;
+  color: #111111;
+}
+table.legend th { font-weight: bold; background: #f2f2f2; }
+
+/* ---- finish screen --------------------------------------------------- */
+.codebox {
+  border: 3px solid #111111; border-radius: 14px;
+  padding: 14px; margin: 0 0 16px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 23px; font-weight: bold; line-height: 1.5;
+  letter-spacing: 0.5px; word-break: break-all; background: #ffffff;
+}
+.said { font-size: 18px; font-weight: bold; min-height: 26px; margin: 0 0 12px; }
+ol.list { font-size: 19px; line-height: 1.5; margin: 0; padding-left: 30px; }
+ol.list li { margin-bottom: 4px; }
+.hide { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==================== welcome ==================== -->
+<div id="s_welcome">
+  <h1>Which job goes first?</h1>
+  <p>You will see pairs of real maintenance work orders. For each pair, pick
+     the job you would start first. It takes about 10 minutes. There is no
+     right answer. We collect no personal data. You may stop at any time.</p>
+
+  <h2>Your code</h2>
+  <input type="text" id="f_code" autocomplete="off" autocorrect="off"
+         autocapitalize="characters" spellcheck="false"
+         aria-label="Participant code">
+
+  <h2>Your role</h2>
+  <div id="f_role"></div>
+
+  <h2>Years working in facilities</h2>
+  <div id="f_years"></div>
+
+  <button type="button" class="btn go" id="b_start" disabled>Start</button>
+  <p class="said" id="w_msg"></p>
+  <p class="hint"><a id="b_reset" style="color:#111111;">Start over</a></p>
+  <p class="hint">Questionnaire B1</p>
+</div>
+
+<!-- ==================== framing, read before item 1 ==================== -->
+<div id="s_brief" class="hide">
+  <h2>Before you start</h2>
+  <ol class="steps">
+    <li>Each item shows two work orders that are sitting in the same site's queue at the same moment. Assume a team member is free now and can start either one.</li>
+    <li>Pick the one you would start first, on operational urgency: what happens if it waits another day, who or what is affected, and how far it has already slipped.</li>
+    <li>You may disagree with the recorded priority. It is shown because a supervisor sees it, not because it is correct.</li>
+    <li>There is one question per pair and nothing else to fill in. Answer from your own judgement and go with your first instinct.</li>
+  </ol>
+  <h2>What the recorded priority means</h2>
+  <table class="legend">
+    <tr><th>Recorded priority</th><th>Target response time</th></tr>
+    <tr><td>P1 Emergency</td><td>1 business day</td></tr>
+    <tr><td>P2 Urgent</td><td>3 business days</td></tr>
+    <tr><td>P3 Routine</td><td>10 business days</td></tr>
+    <tr><td>P4 Planned</td><td>21 business days</td></tr>
+  </table>
+  <p>Fields you will not see, because a supervisor does not have them when the job is dispatched: how long the job actually took, what it eventually cost, and when it was closed out. Estimated labour is the work content a planner would estimate up front.</p>
+  <button type="button" class="btn go" id="b_go">Start the questions</button>
+  <p class="hint"><span class="nav"><a id="b_bback">Back</a></span></p>
+</div>
+
+<!-- ==================== one item ==================== -->
+<div id="s_item" class="hide">
+  <div class="top">
+    <div class="toprow">
+      <span class="count" id="i_count"></span>
+      <span class="nav"><a id="b_back">Back</a> &nbsp; <a id="b_skip">Skip</a></span>
+    </div>
+    <div class="bar"><div class="fill" id="i_fill"></div></div>
+  </div>
+
+  <p class="frame" id="i_frame"></p>
+  <p class="ask">Which job should be started first?</p>
+
+  <div class="card" id="card1">
+    <div class="who">Job 1</div>
+    <div class="desc" id="c1_d"></div>
+    <div class="f"><span class="lab">System</span> <span id="c1_s"></span></div>
+    <div class="f"><span class="lab">Recorded priority</span> <span id="c1_c"></span></div>
+    <div class="f"><span class="lab">Waiting so far</span> <span id="c1_w"></span></div>
+    <div class="f"><span class="lab">Estimated labour</span> <span id="c1_h"></span></div>
+  </div>
+
+  <div class="card" id="card2">
+    <div class="who">Job 2</div>
+    <div class="desc" id="c2_d"></div>
+    <div class="f"><span class="lab">System</span> <span id="c2_s"></span></div>
+    <div class="f"><span class="lab">Recorded priority</span> <span id="c2_c"></span></div>
+    <div class="f"><span class="lab">Waiting so far</span> <span id="c2_w"></span></div>
+    <div class="f"><span class="lab">Estimated labour</span> <span id="c2_h"></span></div>
+  </div>
+
+  <!-- Both answers sit below both cards, so neither can be chosen before the
+       other job has been read. The long form does the same with its radios. -->
+  <div id="answers">
+    <button type="button" class="btn ans" id="b1">Start Job 1 first</button>
+    <button type="button" class="btn ans" id="b2">Start Job 2 first</button>
+  </div>
+</div>
+
+<!-- ==================== finish ==================== -->
+<div id="s_finish" class="hide">
+  <h1>Done. Thank you.</h1>
+  <p>This is your answer code.</p>
+  <div class="codebox" id="f_out"></div>
+  <button type="button" class="btn go" id="b_copy">Copy answers</button>
+  <p class="said" id="f_said"></p>
+  <a class="btn plain" id="b_wa" target="_blank" rel="noopener">Send on WhatsApp</a>
+  <p>Please send this code back to the person who sent you this link.</p>
+  <h2>Your answers</h2>
+  <ol class="list" id="f_list"></ol>
+  <p class="hint"><span class="nav"><a id="b_edit">Change an answer</a></span></p>
+</div>
+
+</div>
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------
+     item content. L is the items file's `left` object and is shown in
+     the TOP card; R is `right` and is shown in the BOTTOM card. The top
+     card records answer side L and the bottom card records R, as
+     DELIVERY_SPEC.md requires of a stacked layout.
+     --------------------------------------------------------------- */
+  var DATA = [
+{"i":"I006","g":"Site A \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"(DT)KILLIAM LIBRARY ATRIUM HAS A PANEL BEEPING","s":"Electrical / Electrical Service \u0026 Distribution","c":"P2 Urgent (target response 3 business days)","w":"5.8 business days","h":"4.0 hours"},"R":{"d":"REPLACE BROKEN TAPS (SEE BRAD FOR DETAILS)","s":"Plumbing / Plumbing Fixtures","c":"P2 Urgent (target response 3 business days)","w":"4.8 business days","h":"4.0 hours"}},
+{"i":"I020","g":"Site D \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"Seal north side eaves of Watson building (Landscape Services). (General Comments)","s":"Site Improvements","c":"P4 Planned (target response 21 business days)","w":"12.0 business days","h":"10.5 hours"},"R":{"d":"AHG4.HHW.HARDWARE.PMC has communication failure. It could not be reinitialized. AHG4.CONTROL_AIR.BLDG.PR is also alarming because the point it wants to read lives on the piece of hardware that failed above. (General Comments)","s":"HVAC","c":"P2 Urgent (target response 3 business days)","w":"7.0 business days","h":"0.5 hours"}},
+{"i":"I007","g":"Site F \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"Seems that the sheaves are bad on 012/0010/2610 this has been on going issue","s":"HVAC / General","c":"P3 Routine (target response 10 business days)","w":"13.7 business days","h":"4.5 hours"},"R":{"d":"MASON front steps are crumbling","s":"Stairs / Stair Construction","c":"P4 Planned (target response 21 business days)","w":"11.0 business days","h":"1.0 hours"}},
+{"i":"I013","g":"Site C \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"MUSIC PRACT 100 \u0026 101 NO HEAT. CALLER IN MUSIC BLDG 253.","s":"HVAC / Controls and Instrumentation","c":"P3 Routine (target response 10 business days)","w":"2.1 business days","h":"1.0 hours"},"R":{"d":"S.HUBBARD-RM 921 EMERG CORE CHG CORE # JP2-289","s":"Interior Construction / Interior Doors","c":"P3 Routine (target response 10 business days)","w":"11.8 business days","h":"1.0 hours"}},
+{"i":"I024","g":"Site F \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"Boiler condensate pumps are not operating properly","s":"HVAC / Heat Generation Systems","c":"P4 Planned (target response 21 business days)","w":"0.9 business days","h":"2.0 hours"},"R":{"d":"LD 4660 desk lamp is flickering","s":"Electrical / Lighting and Branch Wiring","c":"P4 Planned (target response 21 business days)","w":"5.0 business days","h":"0.5 hours"}},
+{"i":"I015","g":"Site B \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"LOCK: CHANGE OR REKEY LOCK/COMBO","s":"Interior Construction / Interior Doors","c":"P3 Routine (target response 10 business days)","w":"10.0 business days","h":"1.0 hours"},"R":{"d":"PM WORK WITH PURCHASE REQ. SUBMITTED WHEN SCHEDULED","s":"HVAC / Distribution Systems","c":"P4 Planned (target response 21 business days)","w":"10.0 business days","h":"1.5 hours"}},
+{"i":"I022","g":"Site D \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"PM Boiler - Semi-Annual","s":"HVAC","c":"P4 Planned (target response 21 business days)","w":"10.0 business days","h":"1.5 hours"},"R":{"d":"After Hours - Lost control air pressure, issue was determined to be water frozen in compressed air line from Utility Plant. (General Comments)","s":"HVAC","c":"P1 Emergency (target response 1 business days)","w":"11.0 business days","h":"12.8 hours"}},
+{"i":"I032","g":"Site E \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"EER: DD FSD SUPERVISORY M3-54","s":"Fire Protection / Sprinklers","c":"P1 Emergency (target response 1 business days)","w":"11.5 business days","h":"0.5 hours"},"R":{"d":"A22: ARL Req 3354 / PDC-CM","s":"Unclassified","c":"P3 Routine (target response 10 business days)","w":"13.0 business days","h":"0.5 hours"}},
+{"i":"I033","g":"Site C \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"YEARLY - SERVICE \u0026 FUNCTIONAL CHECK FURNACE","s":"HVAC / Heat Generation Systems","c":"P4 Planned (target response 21 business days)","w":"7.9 business days","h":"2.0 hours"},"R":{"d":"PAVILION OVERHEAD DOORS--ROLLERS OFF TRACK 1) BIG DOOR, EAST (T","s":"Exterior Enclosure / Exterior Doors","c":"P3 Routine (target response 10 business days)","w":"4.3 business days","h":"8.0 hours"}},
+{"i":"I034","g":"Site A \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"WASHROOM INSPECTION - MONTHLY - ZONE 1","s":"Plumbing / General","c":"P4 Planned (target response 21 business days)","w":"2.9 business days","h":"1.0 hours"},"R":{"d":"FIRE PUMP WEEKLY TEST","s":"Fire Protection / Sprinklers","c":"P4 Planned (target response 21 business days)","w":"12.0 business days","h":"1.0 hours"}},
+{"i":"I035","g":"Site D \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"CJPRJ - STEAM TRAP RECOMMISSIONING","s":"HVAC","c":"P4 Planned (target response 21 business days)","w":"13.5 business days","h":"1.2 hours"},"R":{"d":"After hours - trouble on fire panel at West Stadium. (General Comments)","s":"Fire Protection","c":"P1 Emergency (target response 1 business days)","w":"1.0 business days","h":"1.0 hours"}},
+{"i":"I038","g":"Site B \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"MIGRATED FAMIS WORK ORDERS","s":"Plumbing / General","c":"P3 Routine (target response 10 business days)","w":"6.0 business days","h":"3.3 hours"},"R":{"d":"GENERAL MATERIAL CONDITION: WORK PERFORMED ON EQUIPMENT OR A PROPERTY","s":"General / Inspection","c":"P4 Planned (target response 21 business days)","w":"7.0 business days","h":"90.9 hours"}},
+{"i":"I040","g":"Site F \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"Request to hang banner for Open House.","s":"Furnishings / Fixed Furnishings","c":"P4 Planned (target response 21 business days)","w":"3.5 business days","h":"7.0 hours"},"R":{"d":"Plumb 310 Toilet repair","s":"Plumbing / Plumbing Fixtures","c":"P4 Planned (target response 21 business days)","w":"13.5 business days","h":"1.0 hours"}},
+{"i":"I041","g":"Site E \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"MAI: 1 - CEILING LEAK","s":"Interior Finishes / Ceiling Finishes","c":"P3 Routine (target response 10 business days)","w":"7.7 business days","h":"2.0 hours"},"R":{"d":"JHH: 1.114 DOUBLE PANED GLASS WITH WATER VAPOR INSIDE","s":"Interior Construction / General","c":"P3 Routine (target response 10 business days)","w":"3.0 business days","h":"5.2 hours"}},
+{"i":"I050","g":"Site B \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"ELECTRIC: REPAIR RECEPTACLE OR SWITCH","s":"Electrical / Lighting and Branch Wiring","c":"P3 Routine (target response 10 business days)","w":"6.6 business days","h":"8.4 hours"},"R":{"d":"BMS: AIR FLOW/PRESSURE OUT OF RANGE","s":"HVAC / Controls and Instrumentation","c":"P2 Urgent (target response 3 business days)","w":"7.1 business days","h":"2.2 hours"}},
+{"i":"I039","g":"Site D \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"AHG4.HHW.HARDWARE.PMC has communication failure. It could not be reinitialized. AHG4.CONTROL_AIR.BLDG.PR is also alarming because the point it wants to read lives on the piece of hardware that failed above. (General Comments)","s":"HVAC","c":"P2 Urgent (target response 3 business days)","w":"7.0 business days","h":"0.5 hours"},"R":{"d":"Seal north side eaves of Watson building (Landscape Services). (General Comments)","s":"Site Improvements","c":"P4 Planned (target response 21 business days)","w":"12.0 business days","h":"10.5 hours"}},
+{"i":"I049","g":"Site F \u00b7 both jobs are waiting in the same queue at the same moment","L":{"d":"LD 4660 desk lamp is flickering","s":"Electrical / Lighting and Branch Wiring","c":"P4 Planned (target response 21 business days)","w":"5.0 business days","h":"0.5 hours"},"R":{"d":"Boiler condensate pumps are not operating properly","s":"HVAC / Heat Generation Systems","c":"P4 Planned (target response 21 business days)","w":"0.9 business days","h":"2.0 hours"}}
+];
+
+  var BLOCK = 1;
+  var NITEMS = 17;
+  var KEY = "y3w8.block1.v1";
+
+  var ROLES = [
+    ["SUP", "Maintenance supervisor"],
+    ["PLN", "Maintenance planner or scheduler"],
+    ["TEC", "Senior technician"],
+    ["CMS", "CMMS or work-order coordinator"],
+    ["OTH", "Other"]
+  ];
+  var YEARS = [
+    ["0", "Under 5"],
+    ["5", "5 to 9"],
+    ["10", "10 to 19"],
+    ["20", "20 or more"]
+  ];
+
+  /* ---------------------------------------------------------------
+     checksum, copied from DELIVERY_SPEC.md
+       h = 0
+       for i, ch in enumerate(s):        # i from 0
+           h = (h + ord(ch) * (i + 1)) % 1296
+       checksum = base36(h) zero-padded to 2 upper-case characters
+     --------------------------------------------------------------- */
+  function checksum(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) {
+      h = (h + s.charCodeAt(i) * (i + 1)) % 1296;
+    }
+    var out = h.toString(36).toUpperCase();
+    while (out.length < 2) { out = "0" + out; }
+    return out;
+  }
+
+  /* ---------------------------------------------------------------
+     state
+     --------------------------------------------------------------- */
+  var st = null;
+
+  function fresh() {
+    var a = [], t = [], i;
+    for (i = 0; i < NITEMS; i++) { a.push("-"); t.push(null); }
+    return { code: "", role: "", years: "", ans: a, sec: t,
+             t0: 0, idx: 0, max: 0, done: false, stage: "w" };
+  }
+
+  function load() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(KEY); } catch (e) { raw = null; }
+    if (!raw) { return fresh(); }
+    var s;
+    try { s = JSON.parse(raw); } catch (e) { return fresh(); }
+    if (!s || !s.ans || s.ans.length !== NITEMS) { return fresh(); }
+    if (!s.sec || s.sec.length !== NITEMS) {
+      s.sec = []; for (var i = 0; i < NITEMS; i++) { s.sec.push(null); }
+    }
+    if (typeof s.idx !== "number" || s.idx < 0 || s.idx >= NITEMS) { s.idx = 0; }
+    if (typeof s.max !== "number") { s.max = s.idx; }
+    return s;
+  }
+
+  function save() {
+    try { window.localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {}
+  }
+
+  function wipe() {
+    try { window.localStorage.removeItem(KEY); } catch (e) {}
+  }
+
+  /* participant code: A-Z0-9 only, at most 12 characters, which is what the
+     ingest script accepts. */
+  function clean(v) {
+    var s = String(v == null ? "" : v).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return s.slice(0, 12);
+  }
+
+  function now() { return (new Date()).getTime(); }
+
+  /* ---------------------------------------------------------------
+     shortcuts
+     --------------------------------------------------------------- */
+  function $(id) { return document.getElementById(id); }
+
+  function show(which) {
+    $("s_welcome").className = (which === "w") ? "" : "hide";
+    $("s_brief").className = (which === "b") ? "" : "hide";
+    $("s_item").className = (which === "i") ? "" : "hide";
+    $("s_finish").className = (which === "f") ? "" : "hide";
+    window.scrollTo(0, 0);
+  }
+
+  /* The framing screen. Its six items are part of the instrument, so every
+     participant reads them before the first question. */
+  function goBrief() {
+    st.stage = "b";
+    save();
+    show("b");
+  }
+
+  /* ---------------------------------------------------------------
+     welcome
+     --------------------------------------------------------------- */
+  function queryCode() {
+    var q = String(window.location.search || "");
+    var m = q.match(/[?&]r=([^&#]*)/);
+    if (!m) { return ""; }
+    var v = m[1];
+    try { v = decodeURIComponent(v.replace(/\+/g, " ")); } catch (e) {}
+    return clean(v);
+  }
+
+  function buildChoices(host, rows, field) {
+    host.innerHTML = "";
+    var i;
+    for (i = 0; i < rows.length; i++) {
+      (function (code, label) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn";
+        b.setAttribute("data-v", code);
+        b.appendChild(document.createTextNode(label));
+        b.onclick = function () {
+          st[field] = code;
+          paintChoices(host, st[field]);
+          save();
+          syncStart();
+        };
+        host.appendChild(b);
+      }(rows[i][0], rows[i][1]));
+    }
+  }
+
+  function paintChoices(host, value) {
+    var kids = host.childNodes, i;
+    for (i = 0; i < kids.length; i++) {
+      if (kids[i].getAttribute) {
+        kids[i].className =
+          (kids[i].getAttribute("data-v") === value) ? "btn on" : "btn";
+      }
+    }
+  }
+
+  function syncStart() {
+    $("b_start").disabled = !(st.role && st.years);
+  }
+
+  function initWelcome() {
+    var pre = queryCode();
+    if (pre && !st.code) { st.code = pre; }
+    $("f_code").value = st.code;
+    $("f_code").oninput = function () {
+      st.code = clean($("f_code").value);
+      save();
+    };
+    $("f_code").onblur = function () {
+      $("f_code").value = st.code;
+    };
+    buildChoices($("f_role"), ROLES, "role");
+    buildChoices($("f_years"), YEARS, "years");
+    paintChoices($("f_role"), st.role);
+    paintChoices($("f_years"), st.years);
+    syncStart();
+
+    $("b_start").onclick = function () {
+      st.code = clean($("f_code").value);
+      $("f_code").value = st.code;
+      if (!st.code) {
+        $("w_msg").innerHTML = "";
+        $("w_msg").appendChild(
+          document.createTextNode("Please type the code from your invitation."));
+        $("f_code").focus();
+        return;
+      }
+      $("w_msg").innerHTML = "";
+      save();
+      if (st.t0) { goItem(st.idx); } else { goBrief(); }
+    };
+
+    $("b_go").onclick = function () {
+      if (!st.t0) { st.t0 = now(); }
+      save();
+      goItem(st.idx);
+    };
+    $("b_bback").onclick = function () { st.stage = "w"; save(); show("w"); };
+
+    $("b_reset").onclick = function () {
+      wipe();
+      st = fresh();
+      var again = queryCode();
+      if (again) { st.code = again; }
+      $("f_code").value = st.code;
+      paintChoices($("f_role"), "");
+      paintChoices($("f_years"), "");
+      $("w_msg").innerHTML = "";
+      syncStart();
+      show("w");
+    };
+  }
+
+  /* ---------------------------------------------------------------
+     one item per screen
+     --------------------------------------------------------------- */
+  function put(id, text) {
+    var el = $(id);
+    el.innerHTML = "";
+    el.appendChild(document.createTextNode(text));
+  }
+
+  /* The five card strings arrive already formatted, so nothing here can make
+     the same item read differently to two participants. */
+  function fillCard(tag, job) {
+    put(tag + "_d", job.d);
+    put(tag + "_s", job.s);
+    put(tag + "_c", job.c);
+    put(tag + "_w", job.w);
+    put(tag + "_h", job.h);
+  }
+
+  function goItem(k) {
+    if (k < 0) { goBrief(); return; }
+    if (k >= NITEMS) { goFinish(); return; }
+    st.idx = k;
+    if (k > st.max) { st.max = k; }
+    st.done = false;
+    st.stage = "i";
+    save();
+
+    var it = DATA[k];
+    put("i_count", "Question " + (k + 1) + " of " + NITEMS);
+    $("i_fill").style.width = Math.round(((k + 1) / NITEMS) * 100) + "%";
+    put("i_frame", it.g);
+    fillCard("c1", it.L);
+    fillCard("c2", it.R);
+    show("i");
+  }
+
+  function record(side) {
+    st.ans[st.idx] = side;
+    st.sec[st.idx] = st.t0 ? Math.round((now() - st.t0) / 1000) : null;
+    save();
+    goItem(st.idx + 1);
+  }
+
+  function initItem() {
+    $("b1").onclick = function () { record("L"); };
+    $("b2").onclick = function () { record("R"); };
+    $("b_back").onclick = function () {
+      if (st.idx === 0) { goBrief(); return; }
+      goItem(st.idx - 1);
+    };
+    $("b_skip").onclick = function () { goItem(st.idx + 1); };
+  }
+
+  /* ---------------------------------------------------------------
+     finish
+     --------------------------------------------------------------- */
+  function lineOut() {
+    var answers = st.ans.join("");
+    var code = clean(st.code);
+    var s = "B" + BLOCK + code + answers;
+    return "SURGE.B" + BLOCK + "." + code + "." + st.role + "." +
+           st.years + "." + answers + "." + checksum(s);
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "readonly");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    var ok = false;
+    try {
+      ta.focus();
+      ta.select();
+      if (ta.setSelectionRange) { ta.setSelectionRange(0, 999999); }
+      ok = document.execCommand("copy");
+    } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function said(msg) {
+    var el = $("f_said");
+    el.innerHTML = "";
+    el.appendChild(document.createTextNode(msg));
+  }
+
+  function goFinish() {
+    st.done = true;
+    st.stage = "f";
+    save();
+    var line = lineOut();
+    put("f_out", line);
+    $("b_wa").href = "https://wa.me/?text=" + encodeURIComponent(line);
+    var ol = $("f_list");
+    ol.innerHTML = "";
+    var i, li, a, word;
+    for (i = 0; i < NITEMS; i++) {
+      a = st.ans[i];
+      word = (a === "L") ? "Job 1" : (a === "R") ? "Job 2" : "not answered";
+      li = document.createElement("li");
+      li.appendChild(document.createTextNode((i + 1) + " = " + word));
+      ol.appendChild(li);
+    }
+    said("");
+    show("f");
+  }
+
+  function initFinish() {
+    $("b_edit").onclick = function () { goItem(NITEMS - 1); };
+    $("b_copy").onclick = function () {
+      var line = lineOut();
+      if (window.navigator && window.navigator.clipboard &&
+          window.navigator.clipboard.writeText) {
+        window.navigator.clipboard.writeText(line).then(
+          function () { said("Copied"); },
+          function () { said(fallbackCopy(line) ? "Copied" : "Please hold the code to copy it."); }
+        );
+      } else {
+        said(fallbackCopy(line) ? "Copied" : "Please hold the code to copy it.");
+      }
+    };
+  }
+
+  /* ---------------------------------------------------------------
+     boot
+     --------------------------------------------------------------- */
+  st = load();
+  initWelcome();
+  initItem();
+  initFinish();
+
+  if (st.done) { goFinish(); }
+  else if (st.t0 && st.role && st.years && st.code) { goItem(st.idx); }
+  else if (st.stage === "b" && st.role && st.years && st.code) { goBrief(); }
+  else { show("w"); }
+}());
+</script>
+</body>
+</html>
