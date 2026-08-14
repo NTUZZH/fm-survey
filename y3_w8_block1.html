@@ -212,12 +212,15 @@ ol.list li { margin-bottom: 4px; }
 <!-- ==================== finish ==================== -->
 <div id="s_finish" class="hide">
   <h1>Done. Thank you.</h1>
-  <p>This is your answer code.</p>
-  <div class="codebox" id="f_out"></div>
-  <button type="button" class="btn go" id="b_copy">Copy answers</button>
-  <p class="said" id="f_said"></p>
-  <a class="btn plain" id="b_wa" target="_blank" rel="noopener">Send on WhatsApp</a>
-  <p>Please send this code back to the person who sent you this link.</p>
+  <p id="f_state">Sending your answers...</p>
+  <div id="f_manual" class="hide">
+    <p>Your answers could not be sent, so please send this code back to the
+       person who gave you this link.</p>
+    <div class="codebox" id="f_out"></div>
+    <button type="button" class="btn go" id="b_copy">Copy answers</button>
+    <p class="said" id="f_said"></p>
+    <a class="btn plain" id="b_wa" target="_blank" rel="noopener">Send on WhatsApp</a>
+  </div>
   <h2>Your answers</h2>
   <ol class="list" id="f_list"></ol>
   <p class="hint"><span class="nav"><a id="b_edit">Change an answer</a></span></p>
@@ -256,6 +259,23 @@ ol.list li { margin-bottom: 4px; }
 
   var BLOCK = 1;
   var NITEMS = 17;
+
+  /* ---------------------------------------------------------------
+     returning the answers
+
+     The answers go straight to the study's database, so the participant
+     has nothing to copy and nothing to send. The key below is the
+     project's public key: it can call the two study functions and can
+     read no table, which is why it is safe to publish here.
+
+     Everything still works without it. If the request fails for any
+     reason (no signal, a blocked network, the page opened from a file),
+     the finish screen falls back to the answer code and the participant
+     sends that back instead, exactly as before.
+     --------------------------------------------------------------- */
+  var API = "https://rgvzmearvdgdiqlbfoeh.supabase.co/rest/v1/rpc/w8_submit";
+  var API_KEY = "sb_publishable_kVSqVmKpWdpTmQD0ZcmENw_Ef05MTDb";
+  var SENT_MSG = "Your answers have been received. There is nothing else to do.";
   var KEY = "y3w8.block1.v1";
 
   var ROLES = [
@@ -545,6 +565,57 @@ ol.list li { margin-bottom: 4px; }
     el.appendChild(document.createTextNode(msg));
   }
 
+  function answersOut() {
+    var out = [], i;
+    for (i = 0; i < NITEMS; i++) {
+      out.push({ item_id: DATA[i].i, position: i + 1,
+                 choice_side: (st.ans[i] === "-") ? "" : st.ans[i],
+                 seconds: (st.sec[i] === null) ? "" : st.sec[i] });
+    }
+    return out;
+  }
+
+  function manualReturn() {
+    put("f_state", "");
+    $("f_state").className = "hide";
+    $("f_manual").className = "";
+  }
+
+  function sendAnswers() {
+    var settled = false;
+    var fail = function () { if (!settled) { settled = true; manualReturn(); } };
+    if (!window.XMLHttpRequest || !st.code) { fail(); return; }
+    var xhr = new XMLHttpRequest();
+    try {
+      xhr.open("POST", API, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("apikey", API_KEY);
+      xhr.setRequestHeader("Authorization", "Bearer " + API_KEY);
+      xhr.timeout = 15000;
+      xhr.onerror = fail;
+      xhr.ontimeout = fail;
+      xhr.onload = function () {
+        if (settled) { return; }
+        settled = true;
+        var ok = false;
+        try {
+          ok = (xhr.status === 200) &&
+               (JSON.parse(xhr.responseText).ok === true);
+        } catch (e) { ok = false; }
+        if (ok) {
+          put("f_state", SENT_MSG);
+          $("f_state").className = "";
+          $("f_manual").className = "hide";
+        } else {
+          manualReturn();
+        }
+      };
+      xhr.send(JSON.stringify({ p_code: st.code, p_block: BLOCK,
+                                p_role: st.role, p_years: st.years,
+                                p_answers: answersOut() }));
+    } catch (e) { fail(); }
+  }
+
   function goFinish() {
     st.done = true;
     st.stage = "f";
@@ -552,6 +623,9 @@ ol.list li { margin-bottom: 4px; }
     var line = lineOut();
     put("f_out", line);
     $("b_wa").href = "https://wa.me/?text=" + encodeURIComponent(line);
+    put("f_state", "Sending your answers...");
+    $("f_state").className = "";
+    $("f_manual").className = "hide";
     var ol = $("f_list");
     ol.innerHTML = "";
     var i, li, a, word;
@@ -564,6 +638,7 @@ ol.list li { margin-bottom: 4px; }
     }
     said("");
     show("f");
+    sendAnswers();
   }
 
   function initFinish() {

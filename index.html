@@ -17,15 +17,14 @@
           padding: 14px; margin: 24px 0 0; text-align: center; font-weight: bold;
           font-size: 20px; color: #ffffff; background: #111111; border: 2px solid #111111;
           border-radius: 10px; text-decoration: none; }
+  .hide { display: none; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <p id="msg">Opening the questions...</p>
-  <p id="fallback" style="display:none">
-    If nothing happens, tap the button below.
-  </p>
-  <a class="btn" id="go" href="y3_w8_block1.html" style="display:none">Open the questions</a>
+  <p id="fallback" class="hide">If nothing happens, tap the button below.</p>
+  <a class="btn hide" id="go" href="y3_w8_block1.html">Open the questions</a>
   <noscript>
     <p>This page needs JavaScript. Please open the link in Chrome, Safari or Edge.</p>
   </noscript>
@@ -34,22 +33,28 @@
 /* One link for everybody.
 
    The three question sets hold different work orders, and a participant answers
-   one of them. This page picks which one and issues the participant code, so the
-   same link can be sent to every participant and nobody has to be told which set
-   to open.
+   one of them. This page asks the study's database which set is furthest behind,
+   takes a participant code with it, and sends the participant there, so the same
+   link can go to every participant and the sets fill evenly without anyone
+   deciding anything.
 
-   The choice is made once per device and kept in localStorage, so a participant
-   who closes the page and taps the same link again returns to the set they
-   started, and the question page then restores their answers.
+   The assignment is kept in localStorage, so a participant who closes the page
+   and taps the same link again returns to the set they started, and the question
+   page then restores their answers.
 
-   The sender may override both: "?b=2" forces a set, "?r=R07" forces a code.
-   That is how a set that has attracted fewer answers than the others is topped
-   up later. */
+   If the database cannot be reached, the page assigns a set at random and issues
+   its own code. The participant never sees a difference; the question page will
+   fall back to returning the answers as a short code.
+
+   The sender may override both: "?b=2" asks for a set, which is how a set that
+   has attracted fewer answers is topped up, and "?r=R07" pins a code. */
 (function () {
   "use strict";
   var KEY = "y3w8.entry.v1";
   var NSETS = 3;
   var ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  var API = "https://rgvzmearvdgdiqlbfoeh.supabase.co/rest/v1/rpc/w8_assign";
+  var API_KEY = "sb_publishable_kVSqVmKpWdpTmQD0ZcmENw_Ef05MTDb";
 
   function param(name) {
     var m = String(window.location.search || "").match(
@@ -82,45 +87,76 @@
 
   function load() {
     try {
-      var raw = window.localStorage.getItem(KEY);
-      if (!raw) { return null; }
-      var o = JSON.parse(raw);
-      if (!o || !o.code) { return null; }
-      if (!(o.set >= 1 && o.set <= NSETS)) { return null; }
-      return o;
-    } catch (e) { return null; }
+      var o = JSON.parse(window.localStorage.getItem(KEY));
+      if (o && o.code && o.set >= 1 && o.set <= NSETS) { return o; }
+    } catch (e) {}
+    return null;
   }
 
   function save(o) {
     try { window.localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {}
   }
 
-  var forcedSet = parseInt(param("b"), 10);
-  var forcedCode = cleanCode(param("r"));
-  var state = load();
-
-  if (forcedSet >= 1 && forcedSet <= NSETS) {
-    state = { set: forcedSet, code: forcedCode || (state && state.code) || newCode() };
+  function leave(state) {
     save(state);
-  } else if (forcedCode) {
-    state = { set: (state && state.set) || (randomInts(1)[0] % NSETS) + 1,
-              code: forcedCode };
-    save(state);
-  } else if (!state) {
-    state = { set: (randomInts(1)[0] % NSETS) + 1, code: newCode() };
-    save(state);
+    var url = "y3_w8_block" + state.set + ".html?r=" + encodeURIComponent(state.code);
+    var go = document.getElementById("go");
+    go.href = url;
+    window.setTimeout(function () {
+      document.getElementById("msg").textContent = "Work-order priorities";
+      document.getElementById("fallback").className = "";
+      go.className = "btn";
+    }, 1500);
+    window.location.replace(url);
   }
 
-  var url = "y3_w8_block" + state.set + ".html?r=" + encodeURIComponent(state.code);
-  var go = document.getElementById("go");
-  go.href = url;
-  window.setTimeout(function () {
-    document.getElementById("msg").textContent = "Work-order priorities";
-    document.getElementById("fallback").style.display = "";
-    go.style.display = "";
-  }, 1200);
-  window.location.replace(url);
-})();
+  var forcedSet = parseInt(param("b"), 10);
+  var forcedCode = cleanCode(param("r"));
+  var stored = load();
+  var wantSet = (forcedSet >= 1 && forcedSet <= NSETS) ? forcedSet : 0;
+
+  // Already assigned, and nothing overrides it: go straight back.
+  if (stored && !wantSet && !(forcedCode && forcedCode !== stored.code)) {
+    leave(stored);
+    return;
+  }
+
+  var settled = false;
+  var offline = function () {
+    if (settled) { return; }
+    settled = true;
+    leave({ set: wantSet || ((randomInts(1)[0] % NSETS) + 1),
+            code: forcedCode || (stored && stored.code) || newCode() });
+  };
+
+  if (!window.XMLHttpRequest) { offline(); return; }
+  var xhr = new XMLHttpRequest();
+  try {
+    xhr.open("POST", API, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.setRequestHeader("apikey", API_KEY);
+    xhr.setRequestHeader("Authorization", "Bearer " + API_KEY);
+    xhr.timeout = 12000;
+    xhr.onerror = offline;
+    xhr.ontimeout = offline;
+    xhr.onload = function () {
+      if (settled) { return; }
+      var r = null;
+      try { r = JSON.parse(xhr.responseText); } catch (e) { r = null; }
+      if (xhr.status === 200 && r && r.ok === true &&
+          r.block >= 1 && r.block <= NSETS && r.code) {
+        settled = true;
+        leave({ set: r.block, code: cleanCode(r.code) });
+      } else {
+        offline();
+      }
+    };
+    xhr.send(JSON.stringify({
+      p_block: wantSet || null,
+      p_code: forcedCode || (stored && stored.code) || null
+    }));
+  } catch (e) { offline(); }
+}());
 </script>
 </body>
 </html>
